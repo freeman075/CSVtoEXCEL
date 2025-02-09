@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV to Excel 변환기</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Font Awesome 추가 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --hover-color: #4338CA;
+            --bg-color: #F3F4F6;
+            --text-color: #1F2937;
+            --border-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            min-width: 1180px; /* 최소 너비 설정 */
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 1180px; /* 고정 너비로 변경 */
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--text-color);
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .input-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .file-upload {
+            width: 100%;
+            max-width: 1024px;  /* 텍스트 영역과 동일한 최대 너비 */
+            margin: 0 auto;     /* 중앙 정렬 */
+            border: 2px dashed #CBD5E1;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        
+        .file-upload.dragover {
+            background-color: #F1F5F9;
+            border-color: #64748B;
+        }
+        
+        .file-input-container {
+            width: 100%;
+            position: relative;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #csvFileInput {
+            width: 100%;
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .textarea-container {
+            width: 100%;
+            display: flex;
+            gap: 20px;
+        }
+
+        textarea {
+            flex: 1;
+            min-height: 200px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .button-rows {
+            width: 100%;
+            max-width: 1024px;
+            margin: 1rem auto;
+            display: flex;
+            flex-direction: row;  /* column에서 row로 변경 */
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .button-row {
+            flex: 1;  /* 각 버튼 컨테이너가 동일한 너비를 가지도록 설정 */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 8px 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .reset-btn {
+            flex: none;
+            padding: 8px 16px;
+            background-color: #f97316;
+        }
+
+        .reverse-order {
+            flex: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-upload-label {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: white;
+            border: 2px dashed #CBD5E1;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            width: 100%;        /* 너비 100%로 수정 */
+            max-width: 1024px;  /* 텍스트 영역과 동일한 최대 너비 */
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--primary-color);
+            background-color: #F8FAFC;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button:disabled {
+            background-color: #9CA3AF;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            background-color: #F3F4F6;
+            font-size: 0.95rem;
+        }
+
+        .success {
+            color: #059669;
+            background-color: #D1FAE5;
+        }
+
+        .error {
+            color: #DC2626;
+            background-color: #FEE2E2;
+        }
+
+        .file-name {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #6B7280;
+        }
+
+        /* 새로운 스타일 추가 */
+        .button-group {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;  /* 버튼 사이 간격 */
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;  /* 클립보드 복사 버튼과 동일한 최대 너비 */
+        }
+
+        .button-group button {
+            flex: 1;  /* 버튼이 동일한 너비를 가지도록 설정 */
+            padding: 0.75rem 1rem;  /* 패딩 조정 */
+        }
+
+        .time-result {
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        .copy-button {
+            background-color: #10B981;
+            width: 100%;
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 0.75rem 1rem;
+        }
+
+        .copy-button:hover {
+            background-color: #059669;
+        }
+
+        .copy-button i {
+            margin-right: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* CSV 텍스트 입력 영역 스타일 추가 */
+        .csv-text-area {
+            width: 100%;
+            max-width: 1024px;  /* 최대 너비 지정 */
+            margin: 0 auto;     /* 중앙 정렬 */
+        }
+
+        .csv-text-area textarea {
+            width: 100%;
+            height: 250px;
+            min-height: unset;
+            max-height: unset;
+            padding: 1rem;
+            border: 1px solid #CBD5E1;
+            border-radius: var(--border-radius);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            white-space: nowrap !important;
+            overflow-x: scroll !important;
+            overflow-y: scroll !important;
+        }
+
+        .csv-text-area textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 스크롤바 스타일 개선 */
+        .csv-text-area textarea::-webkit-scrollbar {
+            height: 16px;
+            width: 16px;  /* 세로 스크롤바 너비 추가 */
+        }
+        .csv-text-area textarea::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .csv-text-area textarea::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 8px;
+            border: 4px solid #f1f5f9;
+        }
+
+        /* 탭 스타일 추가 */
+        .tab-container {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.5rem 1rem;
+            background-color: #E5E7EB;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            max-width: none;
+            flex: 1;
+        }
+
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            width: 100%;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 텍스트 영역 스타일 수정 */
+        .csv-text-area, .time-result {
+            width: 100%;
+            margin: 0;
+            max-width: 1024px;
+        }
+
+        .csv-text-area textarea, .time-result textarea {
+            width: 100%;
+            height: 250px;
+            min-height: unset;
+            max-height: unset;
+            padding: 1rem;
+            border: 1px solid #CBD5E1;
+            border-radius: var(--border-radius);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: horizontal;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        /* 텍스트 영역 hover 시 스크롤바 스타일 */
+        .csv-text-area textarea::-webkit-scrollbar,
+        .time-result textarea::-webkit-scrollbar {
+            height: 16px;  /* 스크롤바 높이 증가 */
+        }
+
+        .csv-text-area textarea::-webkit-scrollbar-track,
+        .time-result textarea::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 4px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .csv-text-area textarea::-webkit-scrollbar-thumb,
+        .time-result textarea::-webkit-scrollbar-thumb {
+            background: #94A3B8;
+            border-radius: 4px;
+            border: 3px solid #F1F5F9;
+            background-clip: padding-box;
+        }
+
+        .csv-text-area textarea::-webkit-scrollbar-thumb:hover,
+        .time-result textarea::-webkit-scrollbar-thumb:hover {
+            background: #64748B;
+            border: 3px solid #F1F5F9;
+            background-clip: padding-box;
+        }
+
+        /* 결과 메시지 스타일 수정 */
+        .result {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            animation: fadeOut 3s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* 버튼 아이콘 스타일 추가 */
+        .button-group button i {
+            margin-right: 8px;
+        }
+
+        /* 타이틀 스타일 수정 */
+        .title-container {
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #E5E7EB;
+            position: relative;
+        }
+
+        .title-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .title-icon {
+            font-size: 2rem;
+            background: linear-gradient(120deg, var(--primary-color), #6366F1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .title-container h1 {
+            margin: 0;
+            font-size: 2rem;
+            background: linear-gradient(120deg, var(--primary-color), #6366F1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .title-description {
+            font-size: 0.9rem;
+            color: #6B7280;
+            margin-top: 0.5rem;
+        }
+
+        /* 버튼 그룹 스타일 수정 */
+        .button-group button {
+            flex: 1;
+            padding: 0.75rem 1rem;
+        }
+
+        /* 엑셀 변환 버튼 스타일 */
+        .excel-convert-btn {
+            background-color: #2563EB !important; /* 진한 파란색 */
+        }
+
+        .excel-convert-btn:hover {
+            background-color: #1D4ED8 !important;
+        }
+
+        /* 강의시간 추출 버튼 스타일 */
+        .time-extract-btn {
+            background-color: #7C3AED !important; /* 진한 보라색 */
+        }
+
+        .time-extract-btn:hover {
+            background-color: #6D28D9 !important;
+        }
+
+        /* 강사 파일 변환 버튼 스타일 */
+        .teacher-convert-btn {
+            background-color: #0EA5E9 !important; /* 하늘색 */
+        }
+
+        .teacher-convert-btn:hover {
+            background-color: #0284C7 !important;
+        }
+
+        /* 엑셀 섹션 스타일 */
+        .excel-section {
+            margin-top: 0.5rem;
+            width: 100%;
+            max-width: 1024px;
+        }
+
+        /* 컬럼별 고정 너비 설정 */
+        /* 강좌명 */
+        th:has(span:contains("강좌명")), 
+        th:has(span:contains("과정명")),
+        th:has(span:contains("교육명")) {
+            min-width: 600px !important;  /* 400px에서 600px로 증가 */
+        }
+
+        /* 강의시간 */
+        th:has(span:contains("강의시간")) {
+            width: 300px !important;
+            min-width: 300px !important;
+            max-width: 300px !important;
+        }
+
+        /* 대상학년 */
+        th:has(span:contains("대상학년")) {
+            min-width: 200px !important;
+        }
+
+        /* 정원 */
+        th:has(span:contains("정원")):not(:has(span:contains("대기정원"))) {
+            min-width: 100px !important;
+        }
+
+        /* 대기정원 */
+        th:has(span:contains("대기정원")) {
+            min-width: 100px !important;
+        }
+
+        /* 운영기간 */
+        th:has(span:contains("운영기간(시작)")),
+        th:has(span:contains("운영기간(종료)")) {
+            min-width: 130px !important;
+        }
+
+        /* 강의실 */
+        th:has(span:contains("강의실")) {
+            min-width: 150px !important;
+        }
+
+        /* 수강료 */
+        th:has(span:contains("수강료")),
+        th:has(span:contains("교재비")),
+        th:has(span:contains("재료비")) {
+            min-width: 120px !important;
+        }
+
+        /* 교재비 */
+        th:has(span:contains("교재비")) {
+            width: 120px !important;
+            min-width: 120px !important;
+            max-width: 120px !important;
+        }
+
+        /* 재료비 */
+        th:has(span:contains("재료비")) {
+            width: 120px !important;
+            min-width: 120px !important;
+            max-width: 120px !important;
+        }
+
+        /* 중앙 정렬이 필요한 컬럼들 */
+        th:has(span:contains("강사ID")), td:has(span:contains("강사ID")),
+        th:has(span:contains("강사중복불가")), td:has(span:contains("강사중복불가")),
+        th:has(span:contains("정원")), td:has(span:contains("정원")),
+        th:has(span:contains("대기정원")), td:has(span:contains("대기정원")),
+        th:has(span:contains("수강료")), td:has(span:contains("수강료")),
+        th:has(span:contains("교재비")), td:has(span:contains("교재비")),
+        th:has(span:contains("재료비")), td:has(span:contains("재료비")) {
+            text-align: center !important;
+        }
+        /* 강사ID 컬럼 중앙 정렬 */
+        td[data-column="강사ID"],
+        td[data-column="강사중복불가"],
+        td[data-column="정원"],
+        td[data-column="대기정원"],
+        td[data-column="수강료"],
+        td[data-column="교재비"],
+        td[data-column="재료비"] {
+            text-align: center !important;
+        }
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        tr:hover {
+            background: #e2e8f0;
+            transition: background-color 0.2s ease;
+        }
+        /* 스크롤바 스타일 개선 */
+        .table-wrapper::-webkit-scrollbar {
+            width: 20px;
+            height: 20px;
+            position: sticky;
+            bottom: 0;
+        }
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+            margin: 5px; /* 트랙 여백 추가 */
+        }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+            border: 6px solid #f1f5f9;
+            background-clip: padding-box;
+            min-width: 50px; /* 최소 너비 설정 */
+            min-height: 50px; /* 최소 높이 설정 */
+        }
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+            border: 6px solid #f1f5f9;
+        }
+        .table-wrapper::-webkit-scrollbar-corner {
+            background: #f1f5f9; /* 스크롤바 교차점 스타일 */
+        }
+        td:empty::after {
+            content: "";
+            color: #94a3b8;
+            font-style: italic;
+        }
+        /* 스크롤바 컨테이너 */
+        .scroll-container {
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            height: 20px; /* 스크롤바 높이 */
+            background: white;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .reset-btn {
+            padding: 8px 16px;
+            background-color: #f97316;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .reset-btn:hover {
+            background-color: #ea580c;
+        }
+        .button-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        /* 리셋 버튼과 역순 체크박스를 포함하는 컨테이너 스타일 추가 */
+        .control-row {
+            width: 100%;
+            max-width: 1024px;
+            margin: 0 auto 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 테이블 레이아웃 수정 */
+        table {
+            width: auto;  /* 100%에서 auto로 변경 */
+            min-width: 100%;  /* 최소 너비는 100% 유지 */
+            border-collapse: collapse;
+            background-color: white;
+            table-layout: auto;  /* fixed에서 auto로 변경 */
+        }
+
+        /* 셀 내용이 잘리지 않도록 처리 */
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 20px;
+            text-align: left;
+            color: #1e293b;
+            white-space: nowrap;  /* normal에서 nowrap으로 변경 */
+            overflow: visible;
+            height: auto;
+        }
+
+        /* 컬럼별 최소 너비 설정 */
+        th, td {
+            padding: 12px 20px;
+            vertical-align: top;
+            line-height: 1.5;
+            min-width: 50px;  /* 최소 너비 설정 */
+        }
+
+        /* 강좌명 컬럼 */
+        th:has(span:contains("강좌명")), 
+        th:has(span:contains("과정명")),
+        th:has(span:contains("교육명")) {
+            min-width: 600px !important;  /* 400px에서 600px로 증가 */
+        }
+
+        /* 강의시간 */
+        th:has(span:contains("강의시간")) {
+            width: 300px !important;
+            min-width: 300px !important;
+            max-width: 300px !important;
+        }
+
+        /* 대상학년 */
+        th:has(span:contains("대상학년")) {
+            min-width: 200px !important;
+        }
+
+        /* 나머지 컬럼들도 동일하게 min-width만 설정 */
+        th:has(span:contains("정원")):not(:has(span:contains("대기정원")))),
+        th:has(span:contains("대기정원")) {
+            min-width: 100px !important;
+        }
+
+        th:has(span:contains("운영기간(시작)")),
+        th:has(span:contains("운영기간(종료)")) {
+            min-width: 130px !important;
+        }
+
+        th:has(span:contains("강의실")) {
+            min-width: 150px !important;
+        }
+
+        th:has(span:contains("수강료")),
+        th:has(span:contains("교재비")),
+        th:has(span:contains("재료비")) {
+            min-width: 120px !important;
+        }
+
+        /* 테이블 래퍼 스타일 수정 */
+        .table-wrapper {
+            width: 100%;
+            overflow: auto;
+            margin-bottom: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            padding: 20px 0;
+        }
+
+        /* 시간 관련 컬럼 */
+        th:has(span:contains("시간")),
+        th:has(span:contains("기간")),
+        th:has(span:contains("날짜")) {
+            width: 300px !important;
+            min-width: 300px !important;
+            max-width: 300px !important;
+        }
+
+        /* 링크 버튼 스타일 */
+        .link-buttons {
+            width: 100%;
+            max-width: 1024px;
+            margin: 0 auto 1rem;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .qwen-link, .prompt-btn {
+            flex: 1;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            color: white;
+        }
+
+        .qwen-link {
+            background-color: #10B981;
+        }
+
+        .qwen-link:hover {
+            background-color: #059669;
+        }
+
+        .prompt-btn {
+            background-color: #6366F1;
+        }
+
+        .prompt-btn:hover {
+            background-color: #4F46E5;
+        }
+
+        /* 프롬프트 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 2% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            border-radius: 8px;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #6B7280;
+        }
+
+        .modal-close:hover {
+            color: #1F2937;
+        }
+
+        .copy-prompt-btn {
+            background-color: #10B981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .copy-prompt-btn:hover {
+            background-color: #059669;
+        }
+
+        .even-group {
+            background-color: white;  /* 짝수 그룹은 흰색 유지 */
+        }
+        .odd-group {
+            background-color: #FFF8DC;  /* cornsilk 색상으로 복원 */
+        }
+        /* 그리드 스타일 추가 */
+        th, td {
+            border: 1px solid #e5e7eb;
+        }
+        tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        /* 호버 효과 */
+        tr:hover {
+            background-color: #FFF3E0;  /* 연한 주황색으로 변경 */
+        }
+        /* 숫자 데이터 정렬 */
+        td[data-column="정원"],
+        td[data-column="대기정원"],
+        td[data-column="수강료"],
+        td[data-column="교재비"],
+        td[data-column="재료비"] {
+            text-align: right;
+        }
+        /* 닫기 버튼 스타일 */
+        .close-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        .close-button:hover {
+            background-color: #dc2626;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+        .close-button i {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <div class="title-header">
+                <div class="title-icon">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <h1>CSV to Excel 변환기</h1>
+            </div>
+            <div class="title-description">
+                CSV 파일을 이용하여 "강좌, 강사" 일괄 입력에 필요한 엑셀 파일을 생성합니다.
+            </div>
+        </div>
+        <div class="link-buttons">
+            <a href="https://chat.qwenlm.ai/?gad_source=1" target="_blank" class="qwen-link">
+                <i class="fas fa-robot"></i> QWEN Chat 사이트 가기
+            </a>
+            <button onclick="showPrompt()" class="prompt-btn">
+                <i class="fas fa-file-alt"></i> 강좌일괄입력 CSV 생성 프롬프트 보기
+            </button>
+        </div>
+        <div class="file-upload">
+            <label class="file-upload-label" for="csvFileInput">
+                CSV 파일을 선택하거나 드래그하세요
+                <div class="file-name" id="fileName"></div>
+            </label>
+            <input type="file" id="csvFileInput" accept=".csv" onchange="updateFileName()" />
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="switchTab('csv')">CSV 입력</button>
+                    <button class="tab-button" onclick="switchTab('time')">강의시간 목록</button>
+                </div>
+                
+                <div id="csvTab" class="tab-content active">
+                    <div class="csv-text-area">
+                        <textarea 
+                            id="csvTextInput" 
+                            placeholder="CSV 내용을 여기에 붙여넣기 하세요"
+                            rows="6"
+                        ></textarea>
+                    </div>
+                </div>
+                
+                <div id="timeTab" class="tab-content">
+                    <div class="time-result">
+                        <textarea id="timeList" readonly rows="6"></textarea>
+                        <button onclick="copyToClipboard()" class="copy-button">
+                            <i class="fas fa-copy"></i>클립보드로 복사
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="excel-section">
+                <div class="control-row">
+                    <label class="reverse-order">
+                        <input type="checkbox" id="reverseOrder">
+                        역순으로 저장
+                    </label>
+                    <button onclick="resetCSV()" class="reset-btn">
+                        <i class="fas fa-undo"></i> CSV 초기화
+                    </button>
+                </div>
+
+                <div class="button-rows">
+                    <div class="button-row">
+                        <button onclick="convertCsvToExcel()" id="convertBtn" class="excel-convert-btn">
+                            <i class="fas fa-file-excel"></i> 강좌파일 생성
+                        </button>
+                    </div>
+                    <div class="button-row">
+                        <button onclick="previewAsTable()" id="previewBtn" class="preview-btn">
+                            <i class="fas fa-table"></i> 표로 미리 보기
+                        </button>
+                    </div>
+                    <div class="button-row">
+                        <button onclick="convertTeacherFile()" id="teacherBtn" class="teacher-convert-btn">
+                            <i class="fas fa-chalkboard-teacher"></i> 강사파일 생성
+                        </button>
+                    </div>
+                    <div class="button-row">
+                        <button onclick="extractLectureTime()" id="extractBtn" class="time-extract-btn">
+                            <i class="fas fa-clock"></i> 강의시간 생성
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="result" id="result" style="display: none;"></div>
+    </div>
+
+    <div class="modal" id="promptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>강좌일괄입력 CSV 생성 프롬프트</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>CSV 생성 프롬프트를 입력하세요:</p>
+                <textarea id="promptTextarea" rows="4" placeholder="프롬프트를 여기에 입력하세요"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="copy-prompt-btn">복사</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 프롬프트 내용을 전역 변수로 선언
+        const promptContent = `첨부한 파일을 기초로 아래 지침을 참고하여 csv 파일 생성바랍니다. 
+
+강좌명은 교시가 있고 요일이 복수인 경우 아래와 같이 강좌를 부별로 개별 등록합니다. 
+- 요일별 시간이 같은 경우 : 로봇조립 1부 (화,목 13:10~14:00)
+- 요일별 시간이 다른 경우 : 로봇조립 1부 (화 13:10~14:00 목 14:10~15:00)
+- 원 자료에 "1부, 2부"와 같이 되어 있다면 "부"로 "1교시, 2교시"와 같이 되어 있다면 강좌명에 "교시"를 붙여 개별 생성해주세요. 
+- 특히 강좌명, 강의시간 작성 규칙은 반드시 지침에 따라 작성해주세요. 
+
+요일, 교시, 강의시간 정보가 없는 부서는 아래 "데이터 누락 보정 기능"지침에 따라 작성해주세요. 
+- 요일, 교시, 강의시간 정보가 있는 직전 부서의 정보를 참조하여 작성해주세요. 
+- 직전 부서에 정보가 없다면 아래에 정보가 있는 부서의 정보를 참조하여 작성해주세요. 
+- 요일, 교시, 부, 시간 정보가 없어 승계한 부서도 승계한 부서의 강좌명 작성 규칙에 따르고 교시 또는 부별로 강좌가 개별 생성되어야 합니다. 
+- CSV 파일의 타이틀(컬럼) 개수와 각 행의 내용 개수가 정확히 일치하도록 해주세요.
+- CSV 파일 저장 시: 전체 필드를 큰따옴표(\`"\`)로 묶어 저장합니다.
+
+### **기본 개요**
+
+- **입력 형식:**
+    - PDF, 이미지 파일
+- **출력 형식:**
+    - 강좌일괄입력 csv 파일
+- **csv 출력 파일 컬럼 순서:** 반드시 이 필드 기준으로 csv 파일 생성해주세요. 없는 필드 정보는 아래 지침에 따라 작성해주세요. 
+    1. 중복제한그룹
+    2. 강좌명
+    3. 강사ID
+    4. 강사중복불가
+    5. 대상학년
+    6. 강의시간
+    7. 강의시간중복허용
+    8. 정원
+    9. 대기정원
+    10. 운영기간(시작)
+    11. 운영기간(종료)
+    12. 총시수
+    13. 강의실
+    14. 수강료
+    15. 수용비
+    16. 교재비
+    17. 재료비
+    18. 지원금차감제외(수강료)
+    19. 지원금차감제외(교재비)
+    20. 지원금차감제외(재료비)
+    21. 내용
+
+## **강좌일괄입력 csv 파일 생성 지침**
+
+### **1. PDF 데이터 추출 및 검증**
+#### **1.1 강좌 전체 목록 검토**
+- 모든 강좌 정보를 PDF에서 추출합니다.
+- 총 강좌 개수를 확인하여 누락 여부를 검증합니다.
+
+#### **1.2 OCR 적용 검토**
+- 이미지 형태의 텍스트가 있는 경우 OCR(문자 인식) 기술을 적용합니다.
+- OCR 결과가 원본과 일치하는지 비교하여 정확성을 확인합니다.
+
+---
+
+### **2. 자동 변환 프로세스 개선**
+#### **2.1 강좌명 및 시간 정보 강제 추출**
+- 강좌명, 교시, 요일, 시간, 강사 정보를 추출하여 리스트화합니다.
+- 여러 줄로 분리된 강좌명은 자동으로 한 줄로 결합합니다.
+
+---
+
+### **3. 최종 검증 프로세스**
+#### **3.1 변환 데이터 검증**
+- 변환된 강좌 개수가 PDF의 개수와 일치하는지 확인합니다.
+- 누락된 항목이 있을 경우 자동 보정하여 데이터 누락을 방지합니다.
+
+#### **3.2 강좌 목록 자동 비교 및 로그 저장**
+- 강좌 목록을 텍스트 파일로 저장한 후 PDF 목록과 자동 비교합니다.
+- 누락된 강좌가 발견되면 로그를 남겨 추가 검토할 수 있도록 합니다.
+
+#### **3.3 사용자 검토 프로세스**
+- 최종 변환 데이터는 엑셀 파일 형식으로 제공하여 운영자가 직접 검토할 수 있도록 합니다.
+- 사용자 검토 후 수정 요청이 있을 경우 신속하게 업데이트합니다.
+
+---
+
+### **4. 추가 개선 사항**
+#### **4.1 예외 처리 기능 강화**
+- 강좌 정보가 여러 줄인 경우 자동 결합 로직을 적용합니다.
+- 기본값 입력:
+  - 강사명이 누락되면 "강사 없음"을 입력합니다.
+  - 강의시간이 누락되면 이전 강좌의 운영시간을 기본값으로 입력합니다.
+
+#### **4.2 PDF 변환 프로세스 개선**
+- 불규칙한 표 정렬을 자동 보정하여 강좌별 정보가 올바르게 매칭되도록 합니다.
+- 중복 입력을 방지하기 위한 중복 검출 기능을 추가합니다.
+
+---
+
+### **5. 강좌명 작성 규칙**
+#### **5.1 강좌명 생성**
+- **1순위**: 교시가 있으면 교시별로 개별 강좌로 생성합니다.
+  - 예: \`[선택형] 과학실험부 1교시 (화,목 14:00~14:45)\`
+- **2순위**: 교시 정보가 없다면 시간별로 개별 강좌를 생성합니다.
+  - 예: \`[선택형] 과학실험부 (화,목 14:00~14:45)\`
+- **요일 복수 처리**:
+  - 요일이 복수인 경우 묶어서 하나의 강좌로 생성합니다.
+  - 예: \`[선택형] 생명과학 A (월,금 13:10~14:50)\`
+
+#### **5.2 시간 형식 변환**
+- 시간에 \`"-\"\`가 포함된 경우 \`"~"\`로 변경합니다.
+  - 예: \`"14:00-14:45"\` → \`"14:00~14:45"\`
+
+#### **5.3 프로그램 유형 표기**
+- 선택형: \`[선택형]\`
+- 맞춤형: \`[맞춤형]\`
+- 돌봄: \`[돌봄]\`
+
+---
+
+### **6. 요일 및 교시/운영 시간 미기재 처리**
+#### **6.1. 요일 및 교시 승계 규칙 추가**
+
+- **규칙 1** : 요일 및 교시 정보가 누락된 강좌는 동일한 프로그램 유형(예: 선택형) 내에서 가장 가까운 강좌의 요일 및 교시 정보를 참조합니다.
+    
+    - 예: "바이올린", "방송댄스", "음악줄넘기", "한자"는 "로봇조립"의 요일 및 교시 정보를 승계합니다.
+- **규칙 2** : 요일 및 교시 정보가 일부만 있는 경우(예: "월"만 있음), 동일한 프로그램 유형의 다른 강좌에서 누락된 요일을 추가합니다.
+    
+    - 예: "로봇조립"의 요일이 "화,목"이라면, "바이올린"도 "화,목"으로 설정합니다.
+
+#### **6.2. 시간대 기반 승계 규칙 추가**
+
+- **규칙 3** : 요일 및 교시 정보가 누락된 강좌는 동일한 시간대 또는 유사한 시간대를 가진 강좌의 요일 및 교시 정보를 참조합니다.
+    - 예: "로봇조립 1부 (화,목 13:10~14:00)"과 동일한 시간대를 가지는 "바이올린 1부"는 동일한 요일 및 시간 정보를 승계합니다.
+
+#### **6.3. 명시적 승계 우선순위 정의**
+
+- **우선순위 1** : 동일한 부서명(예: 생명과학)의 직전 강좌에서 요일 및 교시 정보를 승계합니다.
+- **우선순위 2** : 동일한 프로그램 유형(예: 선택형) 내에서 가장 가까운 강좌의 요일 및 교시 정보를 승계합니다.
+- **우선순위 3** : 동일한 장소 또는 유사한 주제를 가진 강좌의 요일 및 교시 정보를 승계합니다.
+
+---
+
+### **7. 대상학년 입력 규칙**
+- 기본값: \`1,2,3,4,5,6\`
+- 범위 표기 변환:
+  - \`1-6학년\` 또는 \`1~6\` → \`1,2,3,4,5,6\`
+  - \`1-2학년\` 또는 \`1~2학년\` → \`1,2\`
+
+---
+
+### **8. 기본값 설정**
+- **중복제한그룹**: \`공란\`
+- **정원**: \`25\`
+- **대기정원**: \`5\`
+- **강사ID**:
+  - 원칙적으로 강사명을 그대로 사용합니다.
+  - 프로그램 유형이 "돌봄"인 경우 \`"돌봄전담사"\`를 입력합니다.
+- **운영기간 기본값**:
+  - 시작일: \`2025-03-01\`
+  - 종료일: \`2025-03-31\`
+- **강사중복불가**:
+  - 기본값: \`Y\`
+  - 돌봄 프로그램의 경우 공란으로 처리합니다.
+
+---
+
+### **9. 비용 관련 항목 처리**
+- **수강료**:
+  - \`"무료"\`인 경우 공란 처리합니다.
+- **교재비, 재료비**:
+  - 교재비, 재료비 필드에 금액 정보가 있으면, 다른 필드에 교재비, 재료비 안내가 있다면 "내용"에 출력합니다.
+  - 참고사항, 비고, 내용과 관련된 정보는 "내용"에 출력합니다. 
+
+---
+
+### **10. 강의시간 작성 상세 규칙**
+- 기본 형식: \`요일:강의시간\`
+  - 요일은 월, 화, 수, 목, 금, 토, 일로 표기합니다.
+- 구분자 사용:
+  - 연속 교시: 쉼표(\`,\`)를 사용
+    - 예: \`월:5교시,6교시\`
+  - 주 2회 이상: 요일 사이에 공백 사용
+    - 예: \`화:5교시,6교시 목:5교시,6교시\`
+
+---
+
+### **11. 기타 항목 처리**
+- **미입력 항목**:
+  - 데이터가 없는 경우 공란 처리합니다.
+- **교시별 등록**:
+  - 각 교시마다 별도의 행으로 등록합니다.
+
+---
+
+### **12. 주의사항**
+- 자료 출처: PDF 또는 이미지 파일 내 부서 및 강좌 정보를 바탕으로 작성합니다.
+- 누락 없이 변환: 모든 강좌 정보가 빠짐없이 변환되도록 주의합니다.
+- 강의시간 필수 입력: 강의시간은 반드시 입력하며, 위 작성 규칙을 준수합니다.
+- 미지정 정보 처리: 미지정된 정보는 바로 위 강좌의 정보를 참조하여 자동 상속합니다.
+- 저장 순서: 결과 파일은 역순으로 저장합니다.
+- 엑셀 서식: 표에 선을 넣고 타이틀에 배경색을 입힌 후, 컬럼 넓이를 자동 조절하여 보기 좋게 만듭니다.
+
+---
+
+위 지침은 생명과학과 같은 요일 승계 문제를 해결하기 위해 필요한 규칙을 포함하며, 중복을 제거하고 명확하게 정리되었습니다.`;
+
+        function parseCSVLine(text) {
+            const result = [];
+            let cell = '';
+            let inQuotes = false;
+            
+            if (!text.trim()) {
+                return [];
+            }
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                
+                if (char === '"') {
+                    if (inQuotes && text[i + 1] === '"') {
+                        cell += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(cell.trim() || '');
+                    cell = '';
+                } else {
+                    cell += char;
+                }
+            }
+            
+            result.push(cell.trim() || '');
+            return result;
+        }
+
+        function updateFileName() {
+            const fileInput = document.getElementById('csvFileInput');
+            const fileName = document.getElementById('fileName');
+            const csvTextInput = document.getElementById('csvTextInput');
+            
+            if (fileInput.files.length > 0) {
+                fileName.textContent = fileInput.files[0].name;
+                csvTextInput.value = ''; // 파일 선택 시 텍스트 영역 초기화
+            } else {
+                fileName.textContent = '';
+            }
+        }
+
+        async function convertCsvToExcel() {
+            const fileInput = document.getElementById('csvFileInput');
+            const csvTextInput = document.getElementById('csvTextInput');
+            const reverseOrder = document.getElementById('reverseOrder').checked; // 역순 체크 여부
+            const resultDiv = document.getElementById('result');
+            const convertBtn = document.getElementById('convertBtn');
+
+            // 파일이나 텍스트 중 하나는 있어야 함
+            if (!fileInput.files.length && !csvTextInput.value.trim()) {
+                showResult('CSV 파일을 선택하거나 CSV 내용을 입력해주세요.', 'error');
+                return;
+            }
+
+            convertBtn.disabled = true;
+            convertBtn.textContent = '변환 중...';
+
+            try {
+                let csvData;
+                if (fileInput.files.length > 0) {
+                    csvData = await readFileAsText(fileInput.files[0]);
+                } else {
+                    csvData = csvTextInput.value;
+                }
+
+                const rows = csvData.split(/\r\n|\n/).filter(row => row.trim());
+                
+                // 모든 행의 컬럼 수를 동일하게 맞추기
+                const maxColumns = Math.max(...rows.map(row => parseCSVLine(row).length));
+                
+                // 헤더와 데이터 분리
+                const headerRow = rows[0];
+                let dataRows = rows.slice(1);
+                
+                // 역순 체크시 데이터 행만 역순으로 변경
+                if (reverseOrder) {
+                    dataRows = dataRows.reverse();
+                }
+                
+                // 헤더와 데이터 다시 합치기
+                const processedRows = [headerRow, ...dataRows];
+                
+                // 데이터 파싱 및 컬럼 수 맞추기
+                const data = processedRows.map(row => {
+                    const columns = parseCSVLine(row);
+                    while (columns.length < maxColumns) {
+                        columns.push('');
+                    }
+                    return columns;
+                });
+
+                // 새 워크북 생성
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Sheet1');
+
+                // 데이터 추가
+                worksheet.addRows(data);
+
+                // 컬럼 너비 자동 조절
+                worksheet.columns.forEach((column, index) => {
+                    let maxLength = 0;
+                    // 헤더(타이틀) 길이 먼저 계산
+                    const headerLength = data[0][index] ? data[0][index].toString().length : 0;
+                    maxLength = headerLength;
+                    
+                    column.eachCell({ includeEmpty: true }, cell => {
+                        // 셀 값이 있는 경우에만 길이 계산
+                        if (cell.value) {
+                            const cellLength = cell.value.toString().length;
+                            maxLength = Math.max(maxLength, cellLength);
+                        }
+                    });
+
+                    // 컬럼별 최대 너비 제한 설정
+                    let maxWidth;
+                    if (index === 1) { // 강좌명
+                        maxWidth = 50;  // 강좌명 너비 유지
+                    } else if (index === 4) { // 대상학년
+                        maxWidth = 15;  // 대상학년 너비 증가
+                    } else if (index === 5) { // 강의시간
+                        maxWidth = 35;  // 강의시간 너비 유지
+                    } else if (index === 2 || index === 3) { // 강사ID, 강사중복불가
+                        maxWidth = 15;  // 강사 관련 정보 너비 증가
+                    } else if (index === 7 || index === 8) { // 정원, 대기정원
+                        maxWidth = 12;  // 정원 관련 정보 너비 증가
+                    } else if (index === 13 || index === 14 || index === 15) { // 수강료, 교재비, 재료비
+                        maxWidth = 15;  // 비용 관련 정보 너비 증가
+                    } else if (index === 17 || index === 18 || index === 19) { // 지원금차감제외 관련 컬럼
+                        maxWidth = 25;  // 지원금차감제외 정보 너비 증가
+                    } else {
+                        maxWidth = 20;  // 기타 항목 기본 너비 증가
+                    }
+
+                    // 한글 문자 고려하여 너비 계산 (한글은 영문보다 더 넓은 공간 필요)
+                    const hasKorean = data.some(row => row[index] && /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(row[index].toString()));
+                    const widthMultiplier = hasKorean ? 2 : 1.2;
+                    column.width = Math.min(Math.max(maxLength * widthMultiplier + 4, 10), maxWidth);
+                });
+
+                // 중앙 정렬할 열 인덱스 정의
+                const centerAlignColumns = [3, 4, 5, 6, 8, 9, 10, 11, 14, 15, 16, 17];  // 6번(강의시간) 추가
+
+                // 순수 강좌명별 그룹 인덱스 매핑 생성
+                const courseGroups = new Map();
+                let groupIndex = 0;
+                
+                data.slice(1).forEach(row => {  // 헤더 제외
+                    if (row[1]) {  // 강좌명이 있는 경우만
+                        const baseName = getBaseCourseName(row[1]); // 1은 강좌명 컬럼
+                        if (!courseGroups.has(baseName)) {
+                            courseGroups.set(baseName, groupIndex++);
+                        }
+                    }
+                });
+
+                // 모든 셀에 테두리 적용 및 중앙 정렬
+                worksheet.eachRow((row, rowNumber) => {
+                    // 행 높이를 20으로 설정
+                    row.height = 20;
+                    
+                    // 헤더가 아닌 경우 배경색 적용
+                    if (rowNumber > 1) {
+                        const courseName = row.getCell(2).value; // 강좌명은 2번째 컬럼
+                        const baseName = getBaseCourseName(courseName);
+                        const groupIndex = courseGroups.get(baseName);
+                        
+                        // 짝수/홀수 그룹에 따라 배경색 설정
+                        if (groupIndex % 2 === 0) {
+                            row.eachCell(cell => {
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: 'FFFFFFFF' }  // 흰색
+                                };
+                            });
+                        } else {
+                            row.eachCell(cell => {
+                                cell.fill = {
+                                    type: 'pattern',
+                                    pattern: 'solid',
+                                    fgColor: { argb: 'FFF8DC' }  // cornsilk 색상으로 복원
+                                };
+                            });
+                        }
+                    }
+
+                    row.eachCell((cell, colNumber) => {
+                        cell.border = {
+                            top: { style: 'thin' },
+                            left: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                            right: { style: 'thin' }
+                        };
+                        // 숫자 포맷이 필요한 컬럼들
+                        const numberFormatColumns = [8, 9, 12, 14, 15, 16, 17]; // 정원, 대기정원, 총시수, 수강료, 수용비, 교재비, 재료비
+                        
+                        // 숫자 포맷 적용
+                        if (numberFormatColumns.includes(colNumber) && rowNumber > 1) {
+                            const value = cell.value;
+                            if (value && value.toString().trim() !== '') {
+                                // 쉼표와 공백 제거 후 숫자로 변환
+                                const numValue = Number(value.toString().replace(/,/g, '').trim());
+                                if (!isNaN(numValue)) {
+                                    cell.value = numValue;
+                                    cell.numFmt = '#,##0';  // 천 단위 구분자 포맷
+                                }
+                            }
+                        }
+
+                        // 중앙 정렬 적용
+                        if (centerAlignColumns.includes(colNumber)) {
+                            cell.alignment = {
+                                vertical: 'middle',
+                                horizontal: 'center'
+                            };
+                        } else {
+                            cell.alignment = {
+                                vertical: 'middle',
+                                horizontal: rowNumber === 1 ? 'center' : 'left'
+                            };
+                        }
+                    });
+
+                    // 첫 번째 행 스타일 (헤더)
+                    if (rowNumber === 1) {
+                        row.height = 20; // 헤더 행 높이도 20으로 통일
+                        row.eachCell((cell) => {
+                            cell.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: { argb: 'FFE2E8F0' }
+                            };
+                            cell.font = {
+                                bold: true,
+                                size: 12
+                            };
+                        });
+                    }
+                });
+
+                // 엑셀 파일로 저장
+                const buffer = await workbook.xlsx.writeBuffer();
+
+                // 현재 날짜와 시간으로 파일명 생성
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+
+                const fileName = `강좌일괄입력파일_${year}${month}${day}_${hours}${minutes}${seconds}.xlsx`;
+
+                saveAs(new Blob([buffer], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                }), fileName);
+
+                showResult('엑셀 파일이 성공적으로 생성되었습니다!', 'success');
+            } catch (error) {
+                showResult('파일 변환 중 오류가 발생했습니다: ' + error.message, 'error');
+                console.error('변환 오류:', error);
+            } finally {
+                convertBtn.disabled = false;
+                convertBtn.textContent = '엑셀 파일로 변환';
+            }
+        }
+
+        // 파일 읽기 함수
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        async function extractLectureTime() {
+            const fileInput = document.getElementById('csvFileInput');
+            const csvTextInput = document.getElementById('csvTextInput');
+            const timeList = document.getElementById('timeList');
+            const extractBtn = document.getElementById('extractBtn');
+
+            if (!fileInput.files.length && !csvTextInput.value.trim()) {
+                showResult('CSV 파일을 선택하거나 CSV 내용을 입력해주세요.', 'error');
+                return;
+            }
+
+            extractBtn.disabled = true;
+
+            try {
+                let csvData;
+                if (fileInput.files.length > 0) {
+                    csvData = await readFileAsText(fileInput.files[0]);
+                } else {
+                    csvData = csvTextInput.value;
+                }
+
+                const rows = csvData.split(/\r\n|\n/).filter(row => row.trim());
+                const data = rows.map(row => parseCSVLine(row));
+                
+                console.log('헤더:', data[0]);
+                
+                const timeColumnIndex = data[0].findIndex(col => col.includes('강의시간'));
+                console.log('강의시간 컬럼 인덱스:', timeColumnIndex);
+                
+                if (timeColumnIndex === -1) {
+                    throw new Error('강의시간 컬럼을 찾을 수 없습니다.');
+                }
+                
+                // 강의시간 추출 및 중복 제거
+                const timeSet = new Set();
+                data.slice(1).forEach((row, idx) => {
+                    if (row[timeColumnIndex]) {
+                        const times = row[timeColumnIndex].split(' ');
+                        times.forEach(timeInfo => {
+                            const time = timeInfo
+                                .replace(/^[월화수목금토일]:/g, '')
+                                .trim();
+                            
+                            if (time && /^\d{1,2}:\d{2}~\d{1,2}:\d{2}$/.test(time)) {
+                                timeSet.add(time);
+                                console.log(`행 ${idx + 1}의 시간:`, time);
+                            }
+                        });
+                    }
+                });
+
+                // 시간 정렬
+                const sortedTimes = Array.from(timeSet).sort((a, b) => {
+                    const [startA] = a.split('~');
+                    const [startB] = b.split('~');
+                    const [hoursA, minutesA] = startA.split(':').map(Number);
+                    const [hoursB, minutesB] = startB.split(':').map(Number);
+                    return (hoursA * 60 + minutesA) - (hoursB * 60 + minutesB);
+                });
+                
+                console.log('추출된 시간 목록:', sortedTimes);
+                
+                // 결과 표시
+                timeList.value = sortedTimes.join('\n');
+                
+                // 시간 탭으로 전환
+                switchTab('time');
+                
+                if (sortedTimes.length > 0) {
+                    showResult(`${sortedTimes.length}개의 강의시간이 추출되었습니다.`, 'success');
+                } else {
+                    showResult('추출된 강의시간이 없습니다.', 'error');
+                }
+            } catch (error) {
+                showResult('강의시간 추출 중 오류가 발생했습니다: ' + error.message, 'error');
+                console.error('추출 오류:', error);
+            } finally {
+                extractBtn.disabled = false;
+            }
+        }
+
+        function copyToClipboard() {
+            const timeList = document.getElementById('timeList');
+            timeList.select();
+            document.execCommand('copy');
+            
+            // 복사 완료 메시지 표시
+            showResult('클립보드에 복사되었습니다!', 'success');
+            
+            // 선택 해제
+            window.getSelection().removeAllRanges();
+        }
+
+        // Blob을 파일로 저장하는 함수
+        function saveAs(blob, filename) {
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            window.URL.revokeObjectURL(link.href);
+        }
+
+        // 탭 전환 함수 추가
+        function switchTab(tabName) {
+            // 모든 탭 버튼 비활성화
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // 모든 탭 콘텐츠 숨기기
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 선택된 탭 활성화
+            document.querySelector(`button[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+        }
+
+        // showResult 함수 수정
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            resultDiv.className = `result ${type}`;
+            
+            // 3초 후 메시지 숨기기
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        async function convertTeacherFile() {
+            const fileInput = document.getElementById('csvFileInput');
+            const csvTextInput = document.getElementById('csvTextInput');
+            const teacherBtn = document.getElementById('teacherBtn');
+
+            if (!fileInput.files.length && !csvTextInput.value.trim()) {
+                showResult('CSV 파일을 선택하거나 CSV 내용을 입력해주세요.', 'error');
+                return;
+            }
+
+            teacherBtn.disabled = true;
+            teacherBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>생성 중...';
+
+            try {
+                let csvData;
+                if (fileInput.files.length > 0) {
+                    csvData = await readFileAsText(fileInput.files[0]);
+                } else {
+                    csvData = csvTextInput.value;
+                }
+
+                const rows = csvData.split(/\r\n|\n/).filter(row => row.trim());
+                const data = rows.map(row => parseCSVLine(row));
+                
+                // 강사ID 컬럼 찾기
+                const teacherIdIndex = data[0].findIndex(col => col.includes('강사ID'));
+                if (teacherIdIndex === -1) {
+                    throw new Error('강사ID 컬럼을 찾을 수 없습니다.');
+                }
+
+                // 강사ID 추출 및 중복 제거
+                const teacherSet = new Set();
+                data.slice(1).forEach(row => {
+                    if (row[teacherIdIndex]) {
+                        teacherSet.add(row[teacherIdIndex].trim());
+                    }
+                });
+
+                // 정렬된 강사 목록 생성
+                const sortedTeachers = Array.from(teacherSet).sort();
+
+                // 새 워크북 생성
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('강사목록');
+
+                // 헤더 추가
+                worksheet.addRow(['아이디', '이름', '비밀번호']);
+
+                // 데이터 추가
+                sortedTeachers.forEach(teacherId => {
+                    worksheet.addRow([teacherId, teacherId, '1234']);
+                });
+
+                // 스타일 적용
+                worksheet.getRow(1).font = { bold: true };
+                worksheet.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE2E8F0' }
+                };
+
+                // 컬럼 너비 설정
+                worksheet.columns = [
+                    { width: 15 },  // 강사ID
+                    { width: 15 },  // 강사명
+                    { width: 15 }   // 비밀번호
+                ];
+
+                // 모든 셀에 테두리 적용
+                worksheet.eachRow(row => {
+                    row.eachCell(cell => {
+                        cell.border = {
+                            top: { style: 'thin' },
+                            left: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                            right: { style: 'thin' }
+                        };
+                        cell.alignment = {
+                            vertical: 'middle',
+                            horizontal: 'center'
+                        };
+                    });
+                });
+
+                // 파일 저장
+                const buffer = await workbook.xlsx.writeBuffer();
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+                
+                saveAs(new Blob([buffer], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                }), `강사목록_${timestamp}.xlsx`);
+
+                showResult(`${sortedTeachers.length}명의 강사 정보가 추출되었습니다.`, 'success');
+            } catch (error) {
+                showResult('강사 파일 생성 중 오류가 발생했습니다: ' + error.message, 'error');
+                console.error('변환 오류:', error);
+            } finally {
+                teacherBtn.disabled = false;
+                teacherBtn.innerHTML = '<i class="fas fa-chalkboard-teacher"></i>강사 파일 생성';
+            }
+        }
+
+        function previewAsTable() {
+            const csvTextInput = document.getElementById('csvTextInput');
+            const previewBtn = document.getElementById('previewBtn');
+
+            if (!csvTextInput.value.trim()) {
+                showResult('CSV 내용을 입력해주세요.', 'error');
+                return;
+            }
+
+            previewBtn.disabled = true;
+            previewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 미리보기 생성 중...';
+
+            try {
+                const rows = csvTextInput.value.split(/\r\n|\n/).filter(row => row.trim());
+                const data = rows.map(row => parseCSVLine(row));
+
+                // 순수 강좌명별 그룹 인덱스 매핑 생성
+                const courseGroups = new Map();
+                let groupIndex = 0;
+                let currentCourseName = '';
+                
+                data.slice(1).forEach(row => {  // 헤더 제외
+                    if (row[1]) {  // 강좌명이 있는 경우만
+                        const baseName = getBaseCourseName(row[1]); // 1은 강좌명 컬럼
+                        if (!courseGroups.has(baseName)) {
+                            courseGroups.set(baseName, groupIndex++);
+                        }
+                    }
+                });
+
+                // 각 컬럼의 모든 값을 검사하여 유효한 컬럼만 선택
+                const validColumns = data[0].map((header, index) => {
+                    const hasValidValues = data.slice(1).some(row => {
+                        const value = row[index];
+                        return value && 
+                               value.trim() !== '' && 
+                               value.trim() !== '-' &&
+                               value.trim() !== 'undefined' &&
+                               value.trim() !== 'null';
+                    });
+                    
+                    return {
+                        header,
+                        index,
+                        hasValue: header.trim() !== '' && hasValidValues
+                    };
+                }).filter(col => col.hasValue);
+
+                const previewWindow = window.open('', 'CSV_Preview', 
+                    'width=' + screen.width + ',height=' + screen.height + ',left=0,top=0,resizable=yes,scrollbars=yes,status=yes'
+                );
+
+                if (!previewWindow) {
+                    showResult('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', 'error');
+                    return;
+                }
+
+                const previewHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>CSV 미리보기</title>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                            }
+                            .preview-container {
+                                width: 100%;
+                                overflow-x: auto;
+                            }
+                            .table-wrapper {
+                                margin: 20px 0;
+                            }
+                            table {
+                                border-collapse: collapse;
+                                width: 100%;
+                                border: 1px solid #e5e7eb;
+                            }
+                            th {
+                                background-color: #f3f4f6;
+                                padding: 12px;
+                                font-weight: 600;
+                                text-align: left;
+                                border: 1px solid #e5e7eb;
+                                position: sticky;
+                                top: 0;
+                                z-index: 1;
+                            }
+                            td {
+                                padding: 12px;
+                                border: 1px solid #e5e7eb;
+                                vertical-align: top;
+                            }
+                            .even-group {
+                                background-color: white;  /* 짝수 그룹은 흰색으로 변경 */
+                            }
+                            .odd-group {
+                                background-color: #f0f7ff;  /* 홀수 그룹은 연한 파란색으로 변경 */
+                            }
+                            /* 그리드 스타일 추가 */
+                            th, td {
+                                border: 1px solid #e5e7eb;
+                            }
+                            tr {
+                                border-bottom: 1px solid #e5e7eb;
+                            }
+                            /* 호버 효과 */
+                            tr:hover {
+                                background-color: #e6ffe6;  /* 연한 초록색으로 hover 효과 변경 */
+                            }
+                            /* 스크롤바 스타일 */
+                            .preview-container::-webkit-scrollbar {
+                                height: 12px;
+                                width: 12px;
+                            }
+                            .preview-container::-webkit-scrollbar-track {
+                                background: #f1f1f1;
+                            }
+                            .preview-container::-webkit-scrollbar-thumb {
+                                background: #888;
+                                border-radius: 6px;
+                            }
+                            .preview-container::-webkit-scrollbar-thumb:hover {
+                                background: #555;
+                            }
+                            /* 컬럼 너비 조정 */
+                            th:nth-child(2), td:nth-child(2) { /* 강좌명 */
+                                min-width: 300px;
+                            }
+                            th:nth-child(6), td:nth-child(6) { /* 강의시간 */
+                                min-width: 200px;
+                            }
+                            th:nth-child(13), td:nth-child(13) { /* 강의실 */
+                                min-width: 150px;
+                            }
+                            /* 숫자 데이터 정렬 */
+                            td[data-column="정원"],
+                            td[data-column="대기정원"],
+                            td[data-column="수강료"],
+                            td[data-column="교재비"],
+                            td[data-column="재료비"] {
+                                text-align: right;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <button class="close-button" onclick="window.close()">
+                            <i class="fas fa-times"></i> 창 닫기
+                        </button>
+                        <div class="preview-container">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            ${validColumns.map(col => `<th><span>${col.header || '-'}</span></th>`).join('')}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${data.slice(1).map(row => {
+                                            const baseName = getBaseCourseName(row[1] || '');
+                                            const rowClass = courseGroups.get(baseName) % 2 === 0 ? 'even-group' : 'odd-group';
+                                            return `
+                                                <tr class="${rowClass}" style="background-color: ${rowClass === 'even-group' ? 'white' : '#FFF8DC'}">
+                                                    ${validColumns.map(col => {
+                                                        const cell = row[col.index] || '';
+                                                        return `<td data-column="${col.header}">${cell}</td>`;
+                                                    }).join('')}
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                previewWindow.document.write(previewHtml);
+                previewWindow.document.close();
+
+                showResult('CSV 내용이 성공적으로 미리보기되었습니다!', 'success');
+            } catch (error) {
+                showResult('미리보기 생성 중 오류가 발생했습니다: ' + error.message, 'error');
+                console.error('미리보기 오류:', error);
+            } finally {
+                previewBtn.disabled = false;
+                previewBtn.innerHTML = '<i class="fas fa-table"></i> 표로 미리 보기';
+            }
+        }
+
+        function resetCSV() {
+            // CSV 텍스트 입력창 초기화
+            document.getElementById('csvTextInput').value = '';
+            
+            // CSV 파일 입력 초기화
+            const fileInput = document.getElementById('csvFileInput');
+            fileInput.value = '';
+            
+            // 강의시간 목록 입력창 초기화
+            document.getElementById('timeList').value = '';
+            
+            // 역순 체크박스 초기화
+            document.getElementById('reverseOrder').checked = false;
+            
+            // 결과 메시지 초기화
+            document.getElementById('result').innerHTML = '';
+            
+            showResult('CSV 데이터가 초기화되었습니다.', 'success');
+        }
+
+        function showPrompt() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>강좌일괄입력 CSV 생성 프롬프트</h2>
+                        <span class="modal-close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <pre style="white-space: pre-wrap; font-size: 14px; line-height: 1.6; max-height: 70vh; overflow-y: auto; padding: 1rem; background: #f8fafc; border-radius: 4px;">${promptContent}</pre>
+                    </div>
+                    <button onclick="copyPrompt()" class="copy-prompt-btn">
+                        <i class="fas fa-copy"></i> 클립보드에 복사
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+
+            const closeBtn = modal.querySelector('.modal-close');
+            closeBtn.onclick = function() {
+                modal.remove();
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.remove();
+                }
+            }
+        }
+
+        async function copyPrompt() {
+            try {
+                await navigator.clipboard.writeText(promptContent);
+                showResult('프롬프트가 클립보드에 복사되었습니다.', 'success');
+            } catch (err) {
+                showResult('클립보드 복사 중 오류가 발생했습니다.', 'error');
+                console.error('클립보드 복사 오류:', err);
+            }
+        }
+
+        function getBaseCourseName(courseName) {
+            // 첫 번째 단어를 기준으로 그룹핑
+            const words = courseName
+                .replace(/^\[[^\]]+\]\s*/, '') // 프로그램 유형 제거
+                .replace(/\s*\([^)]+\)/, '') // 괄호 안의 시간 정보 제거
+                .trim() // 앞뒤 공백 제거
+                .split(/\s+/); // 공백으로 단어 분리
+
+            // 첫 번째 단어를 반환
+            return words[0] || '';
+        }
+
+        function generateColorFromString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            // pastel color 생성
+            const h = hash % 360;
+            return `hsl(${h}, 70%, 90%)`; // 밝은 파스텔 톤의 색상
+        }
+
+        function displayPreview(data) {
+            const previewArea = document.getElementById('previewArea');
+            if (!data || data.length === 0) {
+                previewArea.innerHTML = '데이터가 없습니다.';
+                return;
+            }
+
+            // 순수 강좌명별 색상 매핑 생성
+            const courseColors = new Map();
+            data.forEach(row => {
+                const baseName = getBaseCourseName(row[1]); // 1은 강좌명 컬럼
+                if (!courseColors.has(baseName)) {
+                    courseColors.set(baseName, generateColorFromString(baseName));
+                }
+            });
+
+            let table = '<table class="preview-table"><thead><tr>';
+            // 헤더 생성
+            const headers = [
+                '중복제한그룹', '강좌명', '강사ID', '강사중복불가', '대상학년',
+                '강의시간', '강의시간중복허용', '정원', '대기정원', '운영기간(시작)',
+                '운영기간(종료)', '총시수', '강의실', '수강료', '수용비',
+                '교재비', '재료비', '지원금차감제외(수강료)', '지원금차감제외(교재비)',
+                '지원금차감제외(재료비)', '내용'
+            ];
+            headers.forEach(header => {
+                table += `<th>${header}</th>`;
+            });
+            table += '</tr></thead><tbody>';
+
+            // 데이터 행 생성
+            data.forEach(row => {
+                const baseName = getBaseCourseName(row[1]);
+                const backgroundColor = courseColors.get(baseName);
+                table += '<tr>';
+                row.forEach((cell, index) => {
+                    // 강좌명 컬럼(index 1)에만 배경색 적용
+                    const style = index === 1 ? `style="background-color: ${backgroundColor};"` : '';
+                    table += `<td ${style}>${cell || ''}</td>`;
+                });
+                table += '</tr>';
+            });
+
+            table += '</tbody></table>';
+            previewArea.innerHTML = table;
+        }
+    </script>
+</body>
+</html>
